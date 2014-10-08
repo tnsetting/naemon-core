@@ -1293,8 +1293,8 @@ void schedule_service_check(service *svc, time_t check_time, int options)
 	if (use_original_event == FALSE) {
 		/* make sure we remove the old event from the queue */
 		if (temp_event) {
-			remove_event(nagios_squeue, temp_event);
-			nm_free(temp_event);
+			destroy_event(temp_event);
+			temp_event = NULL;
 			svc->next_check_event = NULL;
 		}
 
@@ -1744,8 +1744,8 @@ void schedule_host_check(host *hst, time_t check_time, int options)
 
 		/* possibly allocate memory for a new event item */
 		if (temp_event) {
-			remove_event(nagios_squeue, temp_event);
-			nm_free(temp_event);
+			destroy_event(temp_event);
+			temp_event = NULL;
 			hst->next_check_event = NULL;
 		}
 
