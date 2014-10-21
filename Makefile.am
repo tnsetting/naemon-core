@@ -98,8 +98,8 @@ common_sources = \
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = naemon.pc
 
-bin_PROGRAMS = src/naemon/naemon src/naemonstats/naemonstats src/oconfsplit/oconfsplit src/shadownaemon/shadownaemon
-man_MANS = naemon.8 naemonstats.8 shadownaemon.8 oconfsplit.8
+bin_PROGRAMS = src/naemon/naemon src/naemonstats/naemonstats src/shadownaemon/shadownaemon
+man_MANS = naemon.8 naemonstats.8 shadownaemon.8
 naemon.8: src/naemon/naemon
 	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "monitoring core"                          ./src/naemon/naemon       > naemon.8
 
@@ -108,9 +108,6 @@ naemonstats.8: src/naemonstats/naemonstats
 
 shadownaemon.8: src/shadownaemon/shadownaemon
 	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "shadow remote cores via livestatus"       ./src/shadownaemon/shadownaemon > shadownaemon.8
-
-oconfsplit.8: src/oconfsplit/oconfsplit
-	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "split naemon config by hostgroups"        ./src/oconfsplit/oconfsplit   > oconfsplit.8
 
 all-local: $(man_MANS)
 
@@ -130,9 +127,6 @@ src_naemonstats_naemonstats_LDADD = libnaemon.la
 src_shadownaemon_shadownaemon_SOURCES = src/shadownaemon/shadownaemon.c src/shadownaemon/shadownaemon.h $(common_sources)
 src_shadownaemon_shadownaemon_LDADD = libnaemon.la -lm -ldl
 src_shadownaemon_shadownaemon_LDFLAGS = -rdynamic
-
-src_oconfsplit_oconfsplit_LDADD = libnaemon.la -lm -ldl
-src_oconfsplit_oconfsplit_SOURCES = src/naemon/oconfsplit.c $(common_sources)
 
 LDADD = -lnaemon
 lib_LTLIBRARIES = libnaemon.la
@@ -212,7 +206,6 @@ uninstall-hook:
 	rm -f $(DESTDIR)$(mandir)/man8/naemon.8
 	rm -f $(DESTDIR)$(mandir)/man8/naemonstats.8
 	rm -f $(DESTDIR)$(mandir)/man8/shadownaemon.8
-	rm -f $(DESTDIR)$(mandir)/man8/oconfsplit.8
 	rm $(DESTDIR)$(pkgconfdir)/naemon.cfg
 	rm $(DESTDIR)$(pkgconfdir)/resource.cfg
 	rm -r $(DESTDIR)$(pkgconfdir)/conf.d
