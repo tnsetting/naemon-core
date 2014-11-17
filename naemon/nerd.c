@@ -45,7 +45,7 @@ static struct nerd_channel **channels;
 static unsigned int num_channels, alloc_channels;
 static unsigned int chan_host_checks_id, chan_service_checks_id;
 static unsigned int chan_opath_checks_id;
-
+static unsigned int chan_host_perfdata_id, chan_service_perfdata_id;
 
 static struct nerd_channel *find_channel(const char *name)
 {
@@ -348,6 +348,52 @@ static int chan_opath_checks(int cb, void *data)
 }
 
 
+static int chan_host_perfdata(int cb, void *data)
+{
+	nebstruct_host_check_data *ds = (nebstruct_host_check_data *)data;
+	static struct kvvec kvv = KVVEC_INITIALIZER;
+	struct kvvec_buf *kvvb = NULL;
+
+	if (ds->type != NEBTYPE_HOSTCHECK_PROCESSED)
+		return 0;
+
+	kvvec_init(&kvv, 3);
+	kvvec_addkv(&kvv, "host_name", ds->host_name);
+	kvvec_addkv(&kvv, "output", ds->output);
+	kvvec_addkv(&kvv, "perfdata", ds->perf_data);
+	kvvb = kvvec2buf(&kvv, '=', '\n', 1);
+	if (kvvb) {
+		nerd_broadcast(chan_host_perfdata_id, kvvb->buf, kvvb->bufsize);
+		free(kvvb->buf);
+		free(kvvb);
+	}
+
+	return 0;
+}
+
+static int chan_service_perfdata(int cb, void *data)
+{
+	nebstruct_service_check_data *ds = (nebstruct_service_check_data *)data;
+	static struct kvvec kvv = KVVEC_INITIALIZER;
+	struct kvvec_buf *kvvb = NULL;
+
+	if (ds->type != NEBTYPE_SERVICECHECK_PROCESSED)
+		return 0;
+	kvvec_init(&kvv, 4);
+	kvvec_addkv(&kvv, "host_name", ds->host_name);
+	kvvec_addkv(&kvv, "service_description", ds->service_description);
+	kvvec_addkv(&kvv, "output", ds->output);
+	kvvec_addkv(&kvv, "perfdata", ds->perf_data);
+	if (kvvb) {
+		nerd_broadcast(chan_host_perfdata_id, kvvb->buf, kvvb->bufsize);
+		free(kvvb->buf);
+		free(kvvb);
+	}
+
+	return 0;
+}
+
+
 static int nerd_deinit(void)
 {
 	unsigned int i;
@@ -488,6 +534,12 @@ int nerd_init(void)
 	chan_opath_checks_id = nerd_mkchan("opathchecks",
 	                                   "Host and service checks in gource's log format",
 	                                   chan_opath_checks, nebcallback_flag(NEBCALLBACK_HOST_CHECK_DATA) | nebcallback_flag(NEBCALLBACK_SERVICE_CHECK_DATA));
+	chan_host_perfdata_id = nerd_mkchan
+		("hostperfdata", "Host performance data",
+	     chan_host_perfdata, nebcallback_flag(NEBCALLBACK_HOST_CHECK_DATA));
+	chan_service_perfdata_id = nerd_mkchan
+		("serviceperfdata", "Service performance data",
+		 chan_service_perfdata, nebcallback_flag(NEBCALLBACK_SERVICE_CHECK_DATA));
 
 	nm_log(NSLOG_INFO_MESSAGE, "nerd: Fully initialized and ready to rock!\n");
 	return 0;
