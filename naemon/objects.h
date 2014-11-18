@@ -782,6 +782,8 @@ struct command *find_bang_command(char *);
 struct command *find_command(const char *);
 struct service *find_service(const char *, const char *);
 
+extern dkhash_table *object_hash_tables[NUM_HASHED_OBJECT_TYPES];
+
 
 #define OBJECTLIST_DUPE 1
 /**
@@ -831,6 +833,29 @@ int prepend_unique_object_to_objectlist_ptr(objectlist **list, void *object_ptr,
  */
 int free_objectlist(objectlist **);
 
+/**
+ * Copy the pointers of an objectlist
+ * @param list The list to copy
+ * @return A list containing the same pointers as the original
+ */
+struct objectlist *copy_objectlist(struct objectlist *list);
+
+/**
+ * Copy an objectlist and its contained objects
+ * @param list The list to copy
+ * @param copy_func__ The function to create a copy
+ * @return A copy of the objectlist, with pointers returned by copy_func__
+ */
+struct objectlist *deepcopy_objectlist(struct objectlist *list, void *(*copy_func__)(void *));
+
+/**
+ * Free an objectlist and its contained pointers
+ * @param list The list to free
+ * @param destructor__ The destructor function for the contained pointers
+ * @return 0 on success, -1 on errors
+ */
+int deepfree_objectlist(struct objectlist **list, void (*destructor__)(void *));
+
 
 /**** Object Query Functions ****/
 unsigned int host_services_value(struct host *h);
@@ -868,9 +893,21 @@ void fcache_hostdependency(FILE *fp, struct hostdependency *temp_hostdependency)
 void fcache_hostescalation(FILE *fp, struct hostescalation *temp_hostescalation);
 int fcache_objects(char *cache_file);
 
+/** object destructors **/
+void destroy_host(struct host *this_host);
+void destroy_service(struct service *this_service);
+void destroy_hostsmember(struct hostsmember *cur);
+void destroy_contactsmember(struct contactsmember *cur);
+void destroy_contactgroupsmember(struct contactgroupsmember *cur);
+void destroy_servicesmember(struct servicesmember *cur);
+void destroy_customvars(struct customvariablesmember *cur);
 
 /**** Object Cleanup Functions ****/
 int free_object_data(void);                             /* frees all allocated memory for the object definitions */
+
+/** Config post-processing */
+void post_process_hosts(void);
+void post_process_services(void);
 
 NAGIOS_END_DECL
 #endif

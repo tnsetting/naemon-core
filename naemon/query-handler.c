@@ -9,10 +9,12 @@
 #include "globals.h"
 #include "commands.h"
 #include "nm_alloc.h"
+#include "qh-oconf.h"
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <string.h>
+#include <stdarg.h>
 
 /* A registered handler */
 struct query_handler {
@@ -472,6 +474,7 @@ int qh_init(const char *path)
 	qh_register_handler("command", "Naemon external commands interface", 0, qh_command);
 	qh_register_handler("echo", "The Echo Service - What You Put Is What You Get", 0, qh_echo);
 	qh_register_handler("help", "Help for the query handler", 0, qh_help);
+	qh_register_handler("oconf", "Object configuration manager allowing you to alter or create objects", 0, oconf_qhandler);
 
 	return 0;
 }

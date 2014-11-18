@@ -21,7 +21,7 @@ pkginclude_HEADERS = \
 	configuration.h  macros.h       nebstructs.h     sretention.h \
 	defaults.h       naemon.h       nerd.h           statusdata.h \
 	downtime.h       naemonstats.h  notifications.h  utils.h \
-	buildopts.h      nm_alloc.h
+	buildopts.h      nm_alloc.h     qh-oconf.h
 
 all-local: manpages
 
@@ -77,6 +77,7 @@ common_sources = \
 	xsddefault.c xsddefault.h \
 	nagios.h naemon.h \
 	wpres.gperf \
+	qh-oconf.c qh-oconf.h \
 	buildopts.h
 
 

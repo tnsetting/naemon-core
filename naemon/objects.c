@@ -142,10 +142,19 @@ static int cmp_hostesc(const void *a_, const void *b_)
 	return a->host_ptr->id - b->host_ptr->id;
 }
 
-static void post_process_hosts(void)
+void post_process_hosts(void)
 {
 	unsigned int i, slot = 0;
 
+	if (hostescalation_ary)
+		qsort(hostescalation_ary, num_objects.hostescalations, sizeof(hostescalation *), cmp_hostesc);
+
+	if (hostdependency_ary)
+		nm_free(hostdependency_ary);
+	if (!num_objects.hostdependencies)
+		return;
+
+	hostdependency_ary = nm_calloc(num_objects.hostdependencies, sizeof(void *));
 	for (i = 0; slot < num_objects.hostdependencies && i < num_objects.hosts; i++) {
 		objectlist *list;
 		host *h = host_ary[i];
@@ -165,21 +174,22 @@ static void post_process_hosts(void)
 		for (list = h->exec_deps; list; list = list->next)
 			hostdependency_ary[slot++] = (hostdependency *)list->object_ptr;
 	}
+	qsort(hostdependency_ary, num_objects.hostdependencies, sizeof(hostdependency *), cmp_hdep);
 }
 
-static void post_process_object_config(void)
+void post_process_services(void)
 {
 	objectlist *list;
-	unsigned int i, slot;
+	unsigned int i, slot = 0;
 
-	if (hostdependency_ary)
-		free(hostdependency_ary);
+	if (serviceescalation_ary)
+		qsort(serviceescalation_ary, num_objects.serviceescalations, sizeof(serviceescalation *), cmp_serviceesc);
 	if (servicedependency_ary)
-		free(servicedependency_ary);
+		nm_free(servicedependency_ary);
+	if (!num_objects.servicedependencies)
+		return;
 
-	hostdependency_ary = nm_calloc(num_objects.hostdependencies, sizeof(void *));
 	servicedependency_ary = nm_calloc(num_objects.servicedependencies, sizeof(void *));
-
 	slot = 0;
 	for (i = 0; slot < num_objects.servicedependencies && i < num_objects.services; i++) {
 		service *s = service_ary[i];
@@ -188,20 +198,18 @@ static void post_process_object_config(void)
 		for (list = s->exec_deps; list; list = list->next)
 			servicedependency_ary[slot++] = (servicedependency *)list->object_ptr;
 	}
-	timing_point("Done post-processing servicedependencies\n");
+	qsort(servicedependency_ary, num_objects.servicedependencies, sizeof(servicedependency *), cmp_sdep);
+}
 
+static void post_process_object_config(void)
+{
 	post_process_hosts();
-	timing_point("Done post-processing host dependencies\n");
+	timing_point("Done post-processing hosts and host slave objects\n");
 
-	if (servicedependency_ary)
-		qsort(servicedependency_ary, num_objects.servicedependencies, sizeof(servicedependency *), cmp_sdep);
-	if (hostdependency_ary)
-		qsort(hostdependency_ary, num_objects.hostdependencies, sizeof(hostdependency *), cmp_hdep);
-	if (hostescalation_ary)
-		qsort(hostescalation_ary, num_objects.hostescalations, sizeof(hostescalation *), cmp_hostesc);
-	if (serviceescalation_ary)
-		qsort(serviceescalation_ary, num_objects.serviceescalations, sizeof(serviceescalation *), cmp_serviceesc);
-	timing_point("Done post-sorting slave objects\n");
+	post_process_services();
+	timing_point("Done post-processing services and service slave objects\n");
+
+	timing_point("Done post-processing slave objects\n");
 
 	timeperiod_list = timeperiod_ary ? *timeperiod_ary : NULL;
 	command_list = command_ary ? *command_ary : NULL;
@@ -2030,6 +2038,67 @@ int free_objectlist(objectlist **temp_list)
 	return OK;
 }
 
+int deepfree_objectlist(struct objectlist **list, void (*destructor__)(void *))
+{
+	struct objectlist *cur, *next;
+
+	if (!list)
+		return ERROR;
+	for (cur = *list; cur; cur = next) {
+		next = cur->next;
+		destructor__(cur->object_ptr);
+		free(cur);
+	}
+	*list = NULL;
+	return OK;
+}
+
+struct objectlist *copy_objectlist(struct objectlist *list)
+{
+	struct objectlist *dest, *prev = NULL, *orig = NULL;
+	for (; list; list = list->next) {
+		dest = malloc(sizeof(*list));
+		if (!dest) {
+			free_objectlist(&orig);
+			return NULL;
+		}
+
+		dest->object_ptr = list->object_ptr;
+		if (prev) {
+			prev->next = dest;
+		} else {
+			orig = dest;
+		}
+		prev = dest;
+	}
+	return orig;
+}
+
+struct objectlist *deepcopy_objectlist(struct objectlist *list, void *(*copy_func__)(void *))
+{
+	struct objectlist *dest, *prev = NULL, *orig = NULL;
+
+	if (!list || !copy_func__)
+		return NULL;
+
+	for (; list; list = list->next) {
+		dest = malloc(sizeof(*list));
+		if (dest) {
+			dest->object_ptr = copy_func__(list->object_ptr);
+		}
+		if (!dest || !dest->object_ptr) {
+			deepfree_objectlist(&orig, free);
+			return NULL;
+		}
+		if (prev) {
+			prev->next = dest;
+		} else {
+			orig = dest;
+		}
+		prev = dest;
+	}
+	return orig;
+}
 
 /******************************************************************/
 /********************* OBJECT QUERY FUNCTIONS *********************/
@@ -2312,7 +2381,7 @@ static void destroy_timeperiod(struct timeperiod *this_timeperiod)
 	nm_free(this_timeperiod);
 }
 
-static void destroy_hostsmember(struct hostsmember *cur)
+void destroy_hostsmember(struct hostsmember *cur)
 {
 	struct hostsmember *next;
 
@@ -2323,7 +2392,7 @@ static void destroy_hostsmember(struct hostsmember *cur)
 	}
 }
 
-static void destroy_customvars(struct customvariablesmember *cur)
+void destroy_customvars(struct customvariablesmember *cur)
 {
 	struct customvariablesmember *next;
 
@@ -2337,7 +2406,7 @@ static void destroy_customvars(struct customvariablesmember *cur)
 }
 
 
-static void destroy_contactsmember(struct contactsmember *cur)
+void destroy_contactsmember(struct contactsmember *cur)
 {
 	struct contactsmember *next;
 
@@ -2349,7 +2418,7 @@ static void destroy_contactsmember(struct contactsmember *cur)
 }
 
 
-static void destroy_contactgroupsmember(struct contactgroupsmember *cur)
+void destroy_contactgroupsmember(struct contactgroupsmember *cur)
 {
 	struct contactgroupsmember *next;
 
@@ -2360,7 +2429,7 @@ static void destroy_contactgroupsmember(struct contactgroupsmember *cur)
 }
 
 
-static void destroy_servicesmember(struct servicesmember *cur)
+void destroy_servicesmember(struct servicesmember *cur)
 {
 	struct servicesmember *next;
 	while (cur) {
@@ -2371,7 +2440,7 @@ static void destroy_servicesmember(struct servicesmember *cur)
 }
 
 
-static void destroy_host(struct host *this_host)
+void destroy_host(struct host *this_host)
 {
 	destroy_hostsmember(this_host->parent_hosts);
 	destroy_hostsmember(this_host->child_hosts);
@@ -2512,7 +2581,7 @@ static void destroy_contactgroup(struct contactgroup *this_contactgroup)
 	nm_free(this_contactgroup);
 }
 
-static void destroy_service(struct service *this_service)
+void destroy_service(struct service *this_service)
 {
 	destroy_contactgroupsmember(this_service->contact_groups);
 	destroy_contactsmember(this_service->contacts);
