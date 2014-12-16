@@ -105,9 +105,9 @@ void qh_error(int sd, int code, const char *fmt, ...)
 	free(msg);
 }
 
-static int qh_input(int sd, int events, void *ioc_)
+static int qh_input(int sd, int events, void *bq_)
 {
-	iocache *ioc = (iocache *)ioc_;
+	nm_bufferqueue *bq = (nm_bufferqueue *)bq_;
 
 	/* input on main socket, so accept one */
 	if (sd == qh_listen_sock) {
@@ -123,7 +123,7 @@ static int qh_input(int sd, int events, void *ioc_)
 			return 0;
 		}
 
-		if (!(ioc = iocache_create(16384))) {
+		if (!(bq = nm_bufferqueue_create())) {
 			nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to create iocache for inbound request\n");
 			nsock_printf(nsd, "500: Internal server error");
 			close(nsd);
@@ -134,9 +134,9 @@ static int qh_input(int sd, int events, void *ioc_)
 		 * @todo: Stash the iocache and the socket in some
 		 * addressable list so we can release them on deinit
 		 */
-		if (iobroker_register(nagios_iobs, nsd, ioc, qh_input) < 0) {
+		if (iobroker_register(nagios_iobs, nsd, bq, qh_input) < 0) {
 			nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to register input socket %d with I/O broker: %s\n", nsd, strerror(errno));
-			iocache_destroy(ioc);
+			nm_bufferqueue_destroy(bq);
 			close(nsd);
 			return 0;
 		}
@@ -153,10 +153,10 @@ static int qh_input(int sd, int events, void *ioc_)
 		struct query_handler *qh;
 		char *handler = NULL, *query = NULL;
 
-		result = iocache_read(ioc, sd);
+		result = nm_bufferqueue_read(bq, sd);
 		/* disconnect? */
 		if (result == 0 || (result < 0 && errno == EPIPE)) {
-			iocache_destroy(ioc);
+			nm_bufferqueue_destroy(bq);
 			iobroker_close(nagios_iobs, sd);
 			qh_running--;
 			return 0;
@@ -172,7 +172,7 @@ static int qh_input(int sd, int events, void *ioc_)
 		 */
 
 		/* Use data up to the first nul byte */
-		buf = iocache_use_delim(ioc, "\0", 1, &len);
+		nm_bufferqueue_unshift_to_delim(bq, "\0", 1, &len, (void **)&buf);
 		if (!buf)
 			return 0;
 
@@ -197,8 +197,9 @@ static int qh_input(int sd, int events, void *ioc_)
 		if (!(qh = qh_find_handler(handler))) {
 			/* not found. that's a 404 */
 			nsock_printf(sd, "404: %s: No such handler", handler);
+			nm_free(buf);
 			iobroker_close(nagios_iobs, sd);
-			iocache_destroy(ioc);
+			nm_bufferqueue_destroy(bq);
 			return 0;
 		}
 
@@ -213,10 +214,12 @@ static int qh_input(int sd, int events, void *ioc_)
 
 		if (result >= 300 || *buf != '@') {
 			/* error code or one-shot query */
+			nm_free(buf);
 			iobroker_close(nagios_iobs, sd);
-			iocache_destroy(ioc);
+			nm_bufferqueue_destroy(bq);
 			return 0;
 		}
+		nm_free(buf);
 
 		/* check for magic handler codes */
 		switch (result) {
@@ -226,7 +229,7 @@ static int qh_input(int sd, int events, void *ioc_)
 			/* fallthrough */
 		case QH_TAKEOVER: /* handler takes over */
 		case 101:         /* switch protocol (takeover + message) */
-			iocache_destroy(ioc);
+			nm_bufferqueue_destroy(bq);
 			break;
 		}
 	}
