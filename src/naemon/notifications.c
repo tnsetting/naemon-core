@@ -1271,7 +1271,7 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 		if (type != NOTIFICATION_NORMAL) {
 			mac.x[MACRO_NOTIFICATIONTYPE] = nm_strdup(notification_reason_name(type));
 		}
-		else if (hst->current_state == HOST_UP) {
+		else if (hst->current_state == STATE_UP) {
 			mac.x[MACRO_NOTIFICATIONTYPE] = nm_strdup("RECOVERY");
 		}
 		else {

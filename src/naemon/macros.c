@@ -1099,7 +1099,7 @@ int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, char *ar
 						services_ok++;
 					else if (temp_service->current_state == STATE_WARNING) {
 						temp_host = find_host(temp_service->host_name);
-						if (temp_host != NULL && (temp_host->current_state == STATE_DOWN || temp_host->current_state == HOST_UNREACHABLE))
+						if (temp_host != NULL && (temp_host->current_state == STATE_DOWN || temp_host->current_state == STATE_UNREACHABLE))
 							problem = FALSE;
 						if (temp_service->scheduled_downtime_depth > 0)
 							problem = FALSE;
@@ -1112,7 +1112,7 @@ int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, char *ar
 						services_warning++;
 					} else if (temp_service->current_state == STATE_UNKNOWN) {
 						temp_host = find_host(temp_service->host_name);
-						if (temp_host != NULL && (temp_host->current_state == STATE_DOWN || temp_host->current_state == HOST_UNREACHABLE))
+						if (temp_host != NULL && (temp_host->current_state == STATE_DOWN || temp_host->current_state == STATE_UNREACHABLE))
 							problem = FALSE;
 						if (temp_service->scheduled_downtime_depth > 0)
 							problem = FALSE;
@@ -1125,7 +1125,7 @@ int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, char *ar
 						services_unknown++;
 					} else if (temp_service->current_state == STATE_CRITICAL) {
 						temp_host = find_host(temp_service->host_name);
-						if (temp_host != NULL && (temp_host->current_state == STATE_DOWN || temp_host->current_state == HOST_UNREACHABLE))
+						if (temp_host != NULL && (temp_host->current_state == STATE_DOWN || temp_host->current_state == STATE_UNREACHABLE))
 							problem = FALSE;
 						if (temp_service->scheduled_downtime_depth > 0)
 							problem = FALSE;
