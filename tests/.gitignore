@@ -2,5 +2,7 @@
 /test*.trs
 /test-checks
 /test-config
+/test-kvvec
+/test-kvvec-ekvstr
 /test-log
 /test-utils
