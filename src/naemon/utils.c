@@ -2112,6 +2112,7 @@ void free_memory(nagios_macros *mac)
 
 	/* free all allocated memory for the object definitions */
 	free_object_data();
+	destroy_objects_command();
 
 	/* free memory allocated to comments */
 	free_comment_data();
