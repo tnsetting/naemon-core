@@ -17,7 +17,6 @@
 #include <sys/socket.h>
 #include "lib/libnaemon.h"
 #include "common.h"
-#include "objects.h"
 #include "broker.h"
 #include "nebmods.h"
 #include "nebmodules.h"
