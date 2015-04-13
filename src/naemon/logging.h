@@ -80,17 +80,10 @@ extern int log_initial_states;
 extern int log_current_states;
 
 /**** Logging Functions ****/
-/* logit is deprecated. People should use nm_log() instead */
-void logit(int, int, const char *, ...)
-__attribute__((__format__(__printf__, 3, 4), deprecated));
 void nm_log(int, const char *, ...)
 __attribute__((__format__(__printf__, 2, 3)));
 int log_debug_info(int, int, const char *, ...)
 __attribute__((__format__(__printf__, 3, 4)));
-
-/* write_to_all_logs() is deprecated. Use nm_log() instead */
-int write_to_all_logs(char *buffer, unsigned long data_type)
-__attribute__((deprecated));
 
 int rotate_log_file(time_t);			     	/* rotates the main log file */
 int write_log_file_info(time_t *); 			/* records log file/version info */
