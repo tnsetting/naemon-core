@@ -17,6 +17,8 @@ static void update_all_status_data_eventhandler(struct nm_event_execution_proper
 		/* Reschedule, so it becomes recurring */
 		schedule_event(status_update_interval, update_all_status_data_eventhandler, NULL);
 
+		if (!status_update_interval)
+			return 0;
 		update_all_status_data();
 	}
 }
