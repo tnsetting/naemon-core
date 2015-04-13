@@ -145,8 +145,7 @@ static void write_to_logs_and_console(char *buffer, unsigned long data_type, int
 	}
 
 	/* write messages to the logs */
-	write_to_log(buffer, data_type, NULL);
-	write_to_syslog(buffer, data_type);
+	write_to_all_logs(buffer, data_type);
 
 	/* write message to the console */
 	if (display == TRUE) {
