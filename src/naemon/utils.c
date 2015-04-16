@@ -1097,10 +1097,8 @@ void free_memory(nagios_macros *mac)
 	destroy_objects_hostgroup();
 	destroy_objects_servicegroup();
 
-	/* free memory allocated to comments */
 	free_comment_data();
 
-	/* free memory for global event handlers */
 	nm_free(global_host_event_handler);
 	nm_free(global_service_event_handler);
 
