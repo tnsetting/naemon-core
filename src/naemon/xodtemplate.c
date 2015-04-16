@@ -6162,9 +6162,6 @@ static int xodtemplate_register_hostgroup_relations(void *hgrp, void *cookie)
 	struct hostgroup *hg;
 	unsigned int *counter = (unsigned int *)cookie;
 
-	if (!this_hostgroup->register_object)
-		return 0;
-
 	hg = find_hostgroup(this_hostgroup->hostgroup_name);
 	if (!hg)
 		return OK;
