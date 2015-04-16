@@ -1056,14 +1056,6 @@ const char *get_program_version(void)
 }
 
 
-/* XXX: REMOVE! returns Naemon modification date */
-const char *get_program_modification_date(void)
-{
-	return (const char *)"deprecated function; Use get_program_version() instead";
-}
-
-
-
 /******************************************************************/
 /*********************** CLEANUP FUNCTIONS ************************/
 /******************************************************************/
